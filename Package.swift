@@ -24,6 +24,15 @@ let package = Package(
             dependencies: ["StoreHelper"],
             resources: [
                 .process("Resources"),
+            ],
+        ),
+        .executableTarget(
+            name: "ExampleApp",
+            dependencies: ["DeveloperSupportStore"],
+            linkerSettings: [
+                .linkedFramework("AppKit", .when(platforms: [.macOS])),
+                .linkedFramework("UIKit", .when(platforms: [.iOS])),
+                .linkedFramework("SwiftUI"),
             ]
         ),
         .testTarget(

@@ -271,7 +271,7 @@ public struct DeveloperSupportStoreView: View {
                     .foregroundStyle(colors.primaryText)
             }
             .padding(layout.paddingDefault)
-            .frame(maxWidth: .infinity, minHeight: 180)
+            .frame(maxWidth: 220, minHeight: 180)
             .background(
                 RoundedRectangle(cornerRadius: layout.radiusDefault)
                     .fill(colors.secondaryBackground)
@@ -368,9 +368,32 @@ private struct PreviewConfiguration: StoreConfigurationProtocol {
 }
 
 #Preview("DeveloperSupportStoreView") {
+    let config = PreviewConfiguration()
+    let previewService = StoreServicePreview.withDefaultMockData(
+        subscriptionIds: config.subscriptionIds,
+        inAppPurchaseIds: config.inAppPurchaseIds
+    )
+
     DeveloperSupportStoreView(
-        configuration: PreviewConfiguration(),
-        storeService: StoreServicePreview(),
+        configuration: config,
+        storeService: previewService,
+        onPurchaseSuccess: { _ in },
+        onDismiss: {}
+    )
+    .frame(width: 400, height: 500)
+}
+
+#Preview("DeveloperSupportStoreView - With Subscription") {
+    let config = PreviewConfiguration()
+    let previewService = StoreServicePreview.withDefaultMockData(
+        subscriptionIds: config.subscriptionIds,
+        inAppPurchaseIds: config.inAppPurchaseIds,
+        hasActiveSubscription: true
+    )
+
+    DeveloperSupportStoreView(
+        configuration: config,
+        storeService: previewService,
         onPurchaseSuccess: { _ in },
         onDismiss: {}
     )
