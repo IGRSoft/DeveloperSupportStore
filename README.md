@@ -32,7 +32,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(path: "../DeveloperSupportStore")
+    .package(url: "https://github.com/IGRSoft/DeveloperSupportStore.git", from: "1.0.0"),
 ]
 ```
 
@@ -133,7 +133,7 @@ struct CustomStoreConfiguration: StoreConfigurationProtocol {
 
 ```
 DeveloperSupportStore/
-├── Configuration/       # Protocol and configuration types
+├── Configuration/      # Protocol and configuration types
 ├── Models/             # Data models (ProductInfo, PurchaseResult)
 ├── Services/           # StoreHelper integration
 ├── Views/              # SwiftUI views and view model
