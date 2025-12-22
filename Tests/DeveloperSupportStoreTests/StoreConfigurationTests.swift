@@ -72,6 +72,24 @@ struct StoreConfigurationTests {
         #expect(config.layout.radiusThin == 4)
         #expect(config.layout.radiusBig == 24)
     }
+
+    @Test("logging is enabled by default")
+    func loggingEnabledByDefault() {
+        let config = TestConfiguration()
+        #expect(config.isLoggingEnabled == true)
+    }
+
+    @Test("logging can be disabled")
+    func loggingDisabled() {
+        struct SilentConfiguration: StoreConfigurationProtocol {
+            var privacyPolicyURL: URL { URL(string: "https://test.com/privacy")! }
+            var termsOfUseURL: URL { URL(string: "https://test.com/terms")! }
+            var isLoggingEnabled: Bool { false }
+        }
+
+        let config = SilentConfiguration()
+        #expect(config.isLoggingEnabled == false)
+    }
 }
 
 @Suite("Store Layout Constants Tests")

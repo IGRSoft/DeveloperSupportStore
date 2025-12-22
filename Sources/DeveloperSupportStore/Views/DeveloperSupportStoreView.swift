@@ -5,11 +5,8 @@
 //  Copyright © 2025 IGR Soft. All rights reserved.
 //
 
-import os.log
 import StoreKit
 import SwiftUI
-
-private let logger = Logger(subsystem: "DeveloperSupportStore", category: "StoreView")
 
 /// A SwiftUI view that presents the developer support store interface
 /// for subscriptions and in-app purchases.
@@ -42,6 +39,8 @@ public struct DeveloperSupportStoreView: View {
 
     @State private var hoveredProductId: String?
 
+    private let logger: StoreLogger
+
     /// Creates a new developer support store view.
     ///
     /// - Parameters:
@@ -61,6 +60,7 @@ public struct DeveloperSupportStoreView: View {
             onPurchaseSuccess: onPurchaseSuccess,
             onDismiss: onDismiss
         ))
+        logger = StoreLogger(category: "StoreView", isEnabled: configuration.isLoggingEnabled)
     }
 
     // MARK: - Convenience Accessors

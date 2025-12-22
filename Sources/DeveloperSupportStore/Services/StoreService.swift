@@ -7,11 +7,8 @@
 
 import Foundation
 import OrderedCollections
-import os.log
 import StoreHelper
 import StoreKit
-
-private let logger = Logger(subsystem: "DeveloperSupportStore", category: "StoreService")
 
 /// Service for handling App Store interactions using StoreHelper.
 ///
@@ -19,6 +16,7 @@ private let logger = Logger(subsystem: "DeveloperSupportStore", category: "Store
 @MainActor
 public final class StoreService: StoreServiceProtocol {
     private let storeHelper: StoreHelper
+    private let logger: StoreLogger
 
     // Local storage for products (synced from StoreHelper)
     private var _subscriptionProducts: [Product] = []
@@ -26,9 +24,12 @@ public final class StoreService: StoreServiceProtocol {
 
     /// Creates a new store service.
     ///
-    /// - Parameter storeHelper: The StoreHelper instance (defaults to a new instance).
-    public init(storeHelper: StoreHelper = StoreHelper()) {
+    /// - Parameters:
+    ///   - storeHelper: The StoreHelper instance (defaults to a new instance).
+    ///   - isLoggingEnabled: Whether logging is enabled (defaults to true).
+    public init(storeHelper: StoreHelper = StoreHelper(), isLoggingEnabled: Bool = true) {
         self.storeHelper = storeHelper
+        logger = StoreLogger(category: "StoreService", isEnabled: isLoggingEnabled)
     }
 
     // MARK: - Product Collections
@@ -58,23 +59,23 @@ public final class StoreService: StoreServiceProtocol {
     /// Fetches products using StoreHelper and updates local storage.
     public func syncStoreData() async throws {
         logger.notice("syncStoreData() called")
-        logger.notice("storeHelper.hasStarted: \(self.storeHelper.hasStarted)")
+        logger.notice("storeHelper.hasStarted: \(storeHelper.hasStarted)")
 
         // Start StoreHelper if needed
         if !storeHelper.hasStarted {
             logger.notice("Starting StoreHelper...")
             await storeHelper.startAsync()
-            logger.notice("StoreHelper started, hasStarted: \(self.storeHelper.hasStarted)")
+            logger.notice("StoreHelper started, hasStarted: \(storeHelper.hasStarted)")
         }
 
         // After startAsync, products should be loaded from App Store
         // storeHelper.products contains all Product objects fetched
-        logger.notice("storeHelper.products count: \(self.storeHelper.products?.count ?? 0)")
-        logger.notice("storeHelper.productIds: \(Array(self.storeHelper.productIds ?? []), privacy: .public)")
+        logger.notice("storeHelper.products count: \(storeHelper.products?.count ?? 0)")
+        logger.notice("storeHelper.productIds: \(Array(storeHelper.productIds ?? []))")
 
         if let products = storeHelper.products {
             for product in products {
-                logger.notice("  Product: \(product.id, privacy: .public) type=\(String(describing: product.type), privacy: .public)")
+                logger.notice("  Product: \(product.id) type=\(String(describing: product.type))")
             }
         }
 
@@ -83,8 +84,8 @@ public final class StoreService: StoreServiceProtocol {
         _subscriptionProducts = storeHelper.subscriptionProducts ?? []
         _nonConsumableProducts = storeHelper.nonConsumableProducts ?? []
 
-        logger.notice("_subscriptionProducts count: \(self._subscriptionProducts.count)")
-        logger.notice("_nonConsumableProducts count: \(self._nonConsumableProducts.count)")
+        logger.notice("_subscriptionProducts count: \(_subscriptionProducts.count)")
+        logger.notice("_nonConsumableProducts count: \(_nonConsumableProducts.count)")
     }
 
     /// Initiates the purchase of a product.
