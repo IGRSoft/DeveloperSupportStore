@@ -14,11 +14,11 @@ import SwiftUI
 /// Product IDs are loaded automatically from Products.plist by StoreHelper.
 public struct ExampleStoreConfiguration: StoreConfigurationProtocol {
     public var privacyPolicyURL: URL {
-        URL(string: "https://example.com/privacy")!
+        URL(string: "https://igrsoft.com/info/app/developersupporstoreapp/policy.html")!
     }
 
     public var termsOfUseURL: URL {
-        URL(string: "https://example.com/terms")!
+        URL(string: "https://igrsoft.com/info/app/developersupporstoreapp/terms.html")!
     }
 
     public init() {}

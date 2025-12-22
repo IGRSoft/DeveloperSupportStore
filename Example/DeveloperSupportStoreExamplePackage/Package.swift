@@ -19,7 +19,7 @@ let package = Package(
         .target(
             name: "DeveloperSupportStoreExampleFeature",
             dependencies: [
-                .product(name: "DeveloperSupportStore", package: "phoenix-v1"),
+                .product(name: "DeveloperSupportStore", package: "DeveloperSupportStore"),
             ]
         ),
         .testTarget(
