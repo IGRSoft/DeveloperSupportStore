@@ -85,6 +85,6 @@ public extension StoreConfigurationProtocol {
     /// Default layout constants based on the original Colir app design.
     var layout: StoreLayoutConstants { .default }
 
-    /// Default: logging is enabled.
-    var isLoggingEnabled: Bool { true }
+    /// Default: logging is disabled.
+    var isLoggingEnabled: Bool { false }
 }
