@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Products</key>
+    <array>
+        <!-- Non-consumable (one-time) products -->
+        <string>com.igrsoft.colir.middle.tips.inapp</string>
+        <string>com.igrsoft.colir.big.tips.inapp</string>
+    </array>
+    <key>Subscriptions</key>
+    <array>
+        <dict>
+            <key>Group</key>
+            <string>tips</string>
+            <key>Products</key>
+            <array>
+                <string>com.igrsoft.colir.small.tips1.subs</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

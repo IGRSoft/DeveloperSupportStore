@@ -13,25 +13,21 @@ import Testing
 struct StoreConfigurationTests {
     // MARK: - Test Configuration
 
+    /// Test configuration that provides required URLs.
+    /// Product IDs are managed by Products.plist via StoreHelper.
     struct TestConfiguration: StoreConfigurationProtocol {
-        var subscriptionIds: [String] { ["sub.1", "sub.2"] }
-        var inAppPurchaseIds: [String] { ["iap.1", "iap.2", "iap.3"] }
         var privacyPolicyURL: URL { URL(string: "https://test.com/privacy")! }
         var termsOfUseURL: URL { URL(string: "https://test.com/terms")! }
     }
 
     // MARK: - Tests
 
-    @Test("allProductIds combines subscription and IAP IDs")
-    func allProductIds() {
+    @Test("URLs are provided correctly")
+    func urlsProvided() {
         let config = TestConfiguration()
 
-        #expect(config.allProductIds.count == 5)
-        #expect(config.allProductIds.contains("sub.1"))
-        #expect(config.allProductIds.contains("sub.2"))
-        #expect(config.allProductIds.contains("iap.1"))
-        #expect(config.allProductIds.contains("iap.2"))
-        #expect(config.allProductIds.contains("iap.3"))
+        #expect(config.privacyPolicyURL.absoluteString == "https://test.com/privacy")
+        #expect(config.termsOfUseURL.absoluteString == "https://test.com/terms")
     }
 
     @Test("default colors are provided")
@@ -114,7 +110,7 @@ struct StorePurchaseResultTests {
     func successResult() {
         let result = StorePurchaseResult.success(productId: "test.product")
 
-        if case .success(let productId) = result {
+        if case let .success(productId) = result {
             #expect(productId == "test.product")
         } else {
             Issue.record("Expected success result")
