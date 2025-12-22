@@ -65,6 +65,12 @@ public protocol StoreConfigurationProtocol: Sendable {
 
     /// Layout constants for spacing, padding, and corner radius.
     var layout: StoreLayoutConstants { get }
+
+    /// Whether logging is enabled.
+    ///
+    /// When `false`, all internal logging (os.log) is disabled.
+    /// Defaults to `true`.
+    var isLoggingEnabled: Bool { get }
 }
 
 // MARK: - Default Implementations
@@ -78,4 +84,7 @@ public extension StoreConfigurationProtocol {
 
     /// Default layout constants based on the original Colir app design.
     var layout: StoreLayoutConstants { .default }
+
+    /// Default: logging is enabled.
+    var isLoggingEnabled: Bool { true }
 }

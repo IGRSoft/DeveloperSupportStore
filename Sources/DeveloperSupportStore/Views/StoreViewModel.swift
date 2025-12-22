@@ -6,11 +6,8 @@
 //
 
 import Foundation
-import os.log
 import StoreKit
 import SwiftUI
-
-private let logger = Logger(subsystem: "DeveloperSupportStore", category: "StoreViewModel")
 
 /// ViewModel for managing the developer support store view state.
 @MainActor
@@ -25,6 +22,10 @@ public final class StoreViewModel {
 
     /// The store service for handling purchases.
     public let storeService: any StoreServiceProtocol
+
+    // MARK: - Logging
+
+    private let logger: StoreLogger
 
     // MARK: - Callbacks
 
@@ -65,9 +66,10 @@ public final class StoreViewModel {
         onDismiss: @escaping @MainActor () -> Void
     ) {
         self.configuration = configuration
-        self.storeService = storeService ?? StoreService()
+        self.storeService = storeService ?? StoreService(isLoggingEnabled: configuration.isLoggingEnabled)
         self.onPurchaseSuccess = onPurchaseSuccess
         self.onDismiss = onDismiss
+        logger = StoreLogger(category: "StoreViewModel", isEnabled: configuration.isLoggingEnabled)
     }
 
     // MARK: - Actions
@@ -90,7 +92,7 @@ public final class StoreViewModel {
                 break
             }
         } catch {
-            print("Purchase error: \(error.localizedDescription)")
+            logger.error("Purchase error: \(error.localizedDescription)")
         }
     }
 
@@ -107,16 +109,16 @@ public final class StoreViewModel {
             try await storeService.syncStoreData()
 
             logger.notice("After syncStoreData:")
-            logger.notice("  storeService.subscriptionProducts: \(self.storeService.subscriptionProducts.count)")
-            logger.notice("  storeService.nonConsumableProducts: \(self.storeService.nonConsumableProducts.count)")
+            logger.notice("  storeService.subscriptionProducts: \(storeService.subscriptionProducts.count)")
+            logger.notice("  storeService.nonConsumableProducts: \(storeService.nonConsumableProducts.count)")
 
             // Update stored properties to trigger @Observable notification
             subscriptionProducts = storeService.subscriptionProducts
             nonConsumableProducts = storeService.nonConsumableProducts
 
             logger.notice("After assignment:")
-            logger.notice("  subscriptionProducts: \(self.subscriptionProducts.count)")
-            logger.notice("  nonConsumableProducts: \(self.nonConsumableProducts.count)")
+            logger.notice("  subscriptionProducts: \(subscriptionProducts.count)")
+            logger.notice("  nonConsumableProducts: \(nonConsumableProducts.count)")
         } catch {
             logger.error("Sync error: \(error.localizedDescription)")
         }
