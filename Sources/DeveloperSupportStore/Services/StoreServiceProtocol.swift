@@ -6,12 +6,27 @@
 //
 
 import Foundation
+import StoreKit
 
 /// Protocol defining the interface for App Store interactions.
 ///
 /// This protocol is implemented by `StoreService` and can be mocked for testing.
+/// Products are loaded automatically from `Products.plist` via StoreHelper.
 @MainActor
 public protocol StoreServiceProtocol: Sendable {
+    // MARK: - Product Collections
+
+    /// Subscription products loaded from Products.plist (auto-renewable subscriptions).
+    var subscriptionProducts: [Product] { get }
+
+    /// Non-consumable products loaded from Products.plist (one-time purchases/tips).
+    var nonConsumableProducts: [Product] { get }
+
+    /// Indicates whether the user has an active subscription.
+    var hasActiveSubscription: Bool { get }
+
+    // MARK: - Actions
+
     /// Synchronizes store data with the App Store.
     ///
     /// Call this when the store view appears to refresh product information
@@ -20,19 +35,15 @@ public protocol StoreServiceProtocol: Sendable {
 
     /// Initiates the purchase of a product.
     ///
-    /// - Parameter productId: The identifier of the product to purchase.
+    /// - Parameter product: The product to purchase.
     /// - Returns: The result of the purchase attempt.
-    func purchase(_ productId: String) async throws -> StorePurchaseResult
+    func purchase(_ product: Product) async throws -> StorePurchaseResult
 
-    /// Retrieves information for a product.
+    /// Retrieves display information for a product.
     ///
-    /// - Parameter productId: The identifier of the product.
-    /// - Returns: Information about the product.
-    /// - Throws: `StoreServiceError.productNotFound` if the product is not available.
-    func info(for productId: String) throws -> StoreProductInfo
-
-    /// Indicates whether the user has an active subscription.
-    var hasActiveSubscription: Bool { get }
+    /// - Parameter product: The product to get information for.
+    /// - Returns: Information about the product including name, description, and price.
+    func info(for product: Product) -> StoreProductInfo
 }
 
 /// Errors that can occur during store operations.

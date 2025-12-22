@@ -10,16 +10,9 @@ import SwiftUI
 
 // MARK: - Example Configuration
 
-/// Example store configuration with sample product IDs.
+/// Example store configuration.
+/// Product IDs are loaded automatically from Products.plist by StoreHelper.
 struct ExampleStoreConfiguration: StoreConfigurationProtocol {
-    var subscriptionIds: [String] {
-        ["com.example.subscription.monthly"]
-    }
-
-    var inAppPurchaseIds: [String] {
-        ["com.example.tip.small", "com.example.tip.large"]
-    }
-
     var privacyPolicyURL: URL {
         URL(string: "https://example.com/privacy")!
     }
@@ -30,33 +23,34 @@ struct ExampleStoreConfiguration: StoreConfigurationProtocol {
 }
 
 // MARK: - App Entry Point
+
 #if os(macOS)
-import AppKit
+    import AppKit
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
-    func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
+    final class AppDelegate: NSObject, NSApplicationDelegate {
+        func applicationDidFinishLaunching(_: Notification) {
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
-}
 #else
-import UIKit
+    import UIKit
 
-final class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        return true
+    final class AppDelegate: NSObject, UIApplicationDelegate {
+        func application(_: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+            return true
+        }
     }
-}
 #endif
 
 @main
 struct ExampleApp: App {
-#if os(macOS)
-    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-#else
-    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-#endif
-    
+    #if os(macOS)
+        @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    #else
+        @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    #endif
+
     @State private var isStorePresented = false
 
     var body: some Scene {
@@ -77,10 +71,7 @@ struct ContentView: View {
 
     private let configuration = ExampleStoreConfiguration()
     private var previewService: StoreServicePreview {
-        .withDefaultMockData(
-            subscriptionIds: configuration.subscriptionIds,
-            inAppPurchaseIds: configuration.inAppPurchaseIds
-        )
+        .withDefaultMockData()
     }
 
     var body: some View {
@@ -98,9 +89,9 @@ struct ContentView: View {
                 )
             }
         #if os(iOS)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         #else
-        .frame(width: 420, height: 580)
+            .frame(width: 420, height: 580)
         #endif
     }
 

@@ -6,62 +6,101 @@
 //
 
 import Foundation
+import OrderedCollections
+import os.log
 import StoreHelper
 import StoreKit
 
+private let logger = Logger(subsystem: "DeveloperSupportStore", category: "StoreService")
+
 /// Service for handling App Store interactions using StoreHelper.
+///
+/// Products are loaded automatically from `Products.plist` in your app bundle.
 @MainActor
 public final class StoreService: StoreServiceProtocol {
     private let storeHelper: StoreHelper
-    private let configuration: any StoreConfigurationProtocol
+
+    // Local storage for products (synced from StoreHelper)
+    private var _subscriptionProducts: [Product] = []
+    private var _nonConsumableProducts: [Product] = []
 
     /// Creates a new store service.
     ///
-    /// - Parameters:
-    ///   - configuration: The store configuration with product IDs.
-    ///   - storeHelper: The StoreHelper instance (defaults to a new instance).
-    public init(
-        configuration: any StoreConfigurationProtocol,
-        storeHelper: StoreHelper = StoreHelper()
-    ) {
-        self.configuration = configuration
+    /// - Parameter storeHelper: The StoreHelper instance (defaults to a new instance).
+    public init(storeHelper: StoreHelper = StoreHelper()) {
         self.storeHelper = storeHelper
+    }
+
+    // MARK: - Product Collections
+
+    /// Subscription products loaded from Products.plist (auto-renewable subscriptions).
+    public var subscriptionProducts: [Product] {
+        _subscriptionProducts
+    }
+
+    /// Non-consumable products loaded from Products.plist (one-time purchases/tips).
+    public var nonConsumableProducts: [Product] {
+        _nonConsumableProducts
     }
 
     /// Indicates whether the user has an active subscription.
     public var hasActiveSubscription: Bool {
-        storeHelper.purchasedProducts.contains { productId in
-            configuration.subscriptionIds.contains(productId)
+        guard let subscriptionIds = storeHelper.subscriptionProductIds else { return false }
+        return storeHelper.purchasedProducts.contains { productId in
+            subscriptionIds.contains(productId)
         }
     }
 
+    // MARK: - Actions
+
     /// Synchronizes store data with the App Store.
+    ///
+    /// Fetches products using StoreHelper and updates local storage.
     public func syncStoreData() async throws {
+        logger.notice("syncStoreData() called")
+        logger.notice("storeHelper.hasStarted: \(self.storeHelper.hasStarted)")
+
+        // Start StoreHelper if needed
         if !storeHelper.hasStarted {
+            logger.notice("Starting StoreHelper...")
             await storeHelper.startAsync()
-        } else {
-            storeHelper.refreshProductsFromAppStore()
+            logger.notice("StoreHelper started, hasStarted: \(self.storeHelper.hasStarted)")
         }
+
+        // After startAsync, products should be loaded from App Store
+        // storeHelper.products contains all Product objects fetched
+        logger.notice("storeHelper.products count: \(self.storeHelper.products?.count ?? 0)")
+        logger.notice("storeHelper.productIds: \(Array(self.storeHelper.productIds ?? []), privacy: .public)")
+
+        if let products = storeHelper.products {
+            for product in products {
+                logger.notice("  Product: \(product.id, privacy: .public) type=\(String(describing: product.type), privacy: .public)")
+            }
+        }
+
+        // Use StoreHelper's filtered product arrays directly
+        // These filter by product.type from the App Store response
+        _subscriptionProducts = storeHelper.subscriptionProducts ?? []
+        _nonConsumableProducts = storeHelper.nonConsumableProducts ?? []
+
+        logger.notice("_subscriptionProducts count: \(self._subscriptionProducts.count)")
+        logger.notice("_nonConsumableProducts count: \(self._nonConsumableProducts.count)")
     }
 
     /// Initiates the purchase of a product.
     ///
-    /// - Parameter productId: The identifier of the product to purchase.
+    /// - Parameter product: The product to purchase.
     /// - Returns: The result of the purchase attempt.
-    public func purchase(_ productId: String) async throws -> StorePurchaseResult {
+    public func purchase(_ product: Product) async throws -> StorePurchaseResult {
         if !storeHelper.hasStarted {
             await storeHelper.startAsync()
         }
 
-        guard let storeProduct = storeHelper.product(from: productId) else {
-            throw StoreServiceError.productNotFound
-        }
-
-        let (_, purchaseState) = try await storeHelper.purchase(storeProduct)
+        let (_, purchaseState) = try await storeHelper.purchase(product)
 
         switch purchaseState {
         case .purchased:
-            return .success(productId: productId)
+            return .success(productId: product.id)
         case .cancelled:
             return .userCancelled
         case .pending:
@@ -72,19 +111,15 @@ public final class StoreService: StoreServiceProtocol {
         }
     }
 
-    /// Retrieves information for a product.
+    /// Retrieves display information for a product.
     ///
-    /// - Parameter productId: The identifier of the product.
+    /// - Parameter product: The product to get information for.
     /// - Returns: Information about the product.
-    public func info(for productId: String) throws -> StoreProductInfo {
-        guard let storeProduct = storeHelper.product(from: productId) else {
-            throw StoreServiceError.productNotFound
-        }
-
-        return StoreProductInfo(
-            name: storeProduct.displayName,
-            description: storeProduct.description,
-            price: storeProduct.displayPrice
+    public func info(for product: Product) -> StoreProductInfo {
+        StoreProductInfo(
+            name: product.displayName,
+            description: product.description,
+            price: product.displayPrice
         )
     }
 }
@@ -112,29 +147,47 @@ public struct MockProductData: Sendable {
 }
 
 /// A preview implementation of `StoreServiceProtocol` for SwiftUI previews and testing.
+///
+/// This service provides mock data for previews. For full testing with actual StoreKit
+/// behavior, use a StoreKit Configuration file in your test target.
 @MainActor
 public final class StoreServicePreview: StoreServiceProtocol {
     public var hasActiveSubscription: Bool
 
-    private let mockProducts: [String: MockProductData]
+    // Internal storage for mock data
+    private let mockSubscriptions: [MockProductData]
+    private let mockPurchases: [MockProductData]
     private let purchaseResult: StorePurchaseResult
     private let syncDelay: Duration
+
+    // Product collections - empty for preview (use StoreKit Configuration for real products)
+    public var subscriptionProducts: [Product] { [] }
+    public var nonConsumableProducts: [Product] { [] }
+
+    // Mock product arrays for preview iteration
+    public let mockSubscriptionProducts: [MockProductData]
+    public let mockNonConsumableProducts: [MockProductData]
 
     /// Creates a preview store service with configurable mock data.
     ///
     /// - Parameters:
     ///   - hasActiveSubscription: Whether to simulate an active subscription.
-    ///   - mockProducts: Array of mock product data to use.
+    ///   - mockSubscriptions: Mock subscription product data.
+    ///   - mockPurchases: Mock one-time purchase product data.
     ///   - purchaseResult: The result to return from purchase attempts.
     ///   - syncDelay: Artificial delay for sync operations (simulates network).
     public init(
         hasActiveSubscription: Bool = false,
-        mockProducts: [MockProductData] = [],
+        mockSubscriptions: [MockProductData] = [],
+        mockPurchases: [MockProductData] = [],
         purchaseResult: StorePurchaseResult = .success(productId: "mock.product"),
         syncDelay: Duration = .zero
     ) {
         self.hasActiveSubscription = hasActiveSubscription
-        self.mockProducts = Dictionary(uniqueKeysWithValues: mockProducts.map { ($0.productId, $0) })
+        self.mockSubscriptions = mockSubscriptions
+        self.mockPurchases = mockPurchases
+        mockSubscriptionProducts = mockSubscriptions
+        mockNonConsumableProducts = mockPurchases
         self.purchaseResult = purchaseResult
         self.syncDelay = syncDelay
     }
@@ -145,87 +198,84 @@ public final class StoreServicePreview: StoreServiceProtocol {
         }
     }
 
-    public func purchase(_ productId: String) async throws -> StorePurchaseResult {
+    public func purchase(_ product: Product) async throws -> StorePurchaseResult {
         if syncDelay > .zero {
             try await Task.sleep(for: syncDelay)
         }
 
         switch purchaseResult {
         case .success:
-            return .success(productId: productId)
+            return .success(productId: product.id)
         default:
             return purchaseResult
         }
     }
 
-    public func info(for productId: String) throws -> StoreProductInfo {
-        if let mockProduct = mockProducts[productId] {
-            return StoreProductInfo(
-                name: mockProduct.name,
-                description: mockProduct.description,
-                price: mockProduct.price
-            )
+    public func info(for product: Product) -> StoreProductInfo {
+        // Check mock data first
+        if let mock = mockSubscriptions.first(where: { $0.productId == product.id }) ??
+            mockPurchases.first(where: { $0.productId == product.id })
+        {
+            return StoreProductInfo(name: mock.name, description: mock.description, price: mock.price)
         }
 
+        // Fallback to Product's built-in info
         return StoreProductInfo(
-            name: "Preview Product",
-            description: "This is a preview product description.",
-            price: "$0.99"
+            name: product.displayName,
+            description: product.description,
+            price: product.displayPrice
         )
+    }
+
+    /// Gets mock product info by product ID (for previews without real Products).
+    public func mockInfo(for productId: String) -> StoreProductInfo? {
+        if let mock = mockSubscriptions.first(where: { $0.productId == productId }) ??
+            mockPurchases.first(where: { $0.productId == productId })
+        {
+            return StoreProductInfo(name: mock.name, description: mock.description, price: mock.price)
+        }
+        return nil
     }
 }
 
 // MARK: - Default Mock Data
 
-extension StoreServicePreview {
+public extension StoreServicePreview {
     /// Creates a preview service with realistic mock data for a tip jar / subscription store.
     ///
-    /// - Parameters:
-    ///   - subscriptionIds: The subscription product IDs to mock.
-    ///   - inAppPurchaseIds: The one-time purchase product IDs to mock.
-    ///   - hasActiveSubscription: Whether to simulate an active subscription.
-    /// - Returns: A configured preview service.
-    public static func withDefaultMockData(
-        subscriptionIds: [String] = ["com.example.subscription.monthly"],
-        inAppPurchaseIds: [String] = ["com.example.tip.small", "com.example.tip.large"],
+    /// - Parameter hasActiveSubscription: Whether to simulate an active subscription.
+    /// - Returns: A configured preview service with default mock products.
+    static func withDefaultMockData(
         hasActiveSubscription: Bool = false
     ) -> StoreServicePreview {
-        var mockProducts: [MockProductData] = []
-
-        // Add subscription mocks
-        for (index, subscriptionId) in subscriptionIds.enumerated() {
-            let tier = index == 0 ? "Monthly" : "Yearly"
-            let price = index == 0 ? "$2.99" : "$24.99"
-            mockProducts.append(MockProductData(
-                productId: subscriptionId,
-                name: "\(tier) Support",
-                description: "Support ongoing development with a \(tier.lowercased()) contribution.",
-                price: price
-            ))
-        }
-
-        // Add one-time purchase mocks
-        let tipNames = ["Small Tip", "Large Tip", "Generous Tip"]
-        let tipDescriptions = [
-            "A small token of appreciation.",
-            "A generous contribution to development.",
-            "An amazing show of support!"
+        let mockSubscriptions = [
+            MockProductData(
+                productId: "com.example.subscription.monthly",
+                name: "Monthly Support",
+                description: "Support ongoing development with a monthly contribution.",
+                price: "$2.99"
+            ),
         ]
-        let tipPrices = ["$0.99", "$4.99", "$9.99"]
 
-        for (index, purchaseId) in inAppPurchaseIds.enumerated() {
-            let safeIndex = min(index, tipNames.count - 1)
-            mockProducts.append(MockProductData(
-                productId: purchaseId,
-                name: tipNames[safeIndex],
-                description: tipDescriptions[safeIndex],
-                price: tipPrices[safeIndex]
-            ))
-        }
+        let mockPurchases = [
+            MockProductData(
+                productId: "com.example.tip.small",
+                name: "Small Tip",
+                description: "A small token of appreciation.",
+                price: "$0.99"
+            ),
+            MockProductData(
+                productId: "com.example.tip.large",
+                name: "Large Tip",
+                description: "A generous contribution to development.",
+                price: "$4.99"
+            ),
+        ]
 
         return StoreServicePreview(
             hasActiveSubscription: hasActiveSubscription,
-            mockProducts: mockProducts
+            mockSubscriptions: mockSubscriptions,
+            mockPurchases: mockPurchases
         )
     }
 }

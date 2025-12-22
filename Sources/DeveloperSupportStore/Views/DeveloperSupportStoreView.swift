@@ -5,10 +5,16 @@
 //  Copyright © 2025 IGR Soft. All rights reserved.
 //
 
+import os.log
+import StoreKit
 import SwiftUI
+
+private let logger = Logger(subsystem: "DeveloperSupportStore", category: "StoreView")
 
 /// A SwiftUI view that presents the developer support store interface
 /// for subscriptions and in-app purchases.
+///
+/// Products are loaded automatically from `Products.plist` in your app bundle via StoreHelper.
 ///
 /// Example usage:
 /// ```swift
@@ -24,9 +30,8 @@ import SwiftUI
 /// ```
 public struct DeveloperSupportStoreView: View {
     private enum ButtonsFocusable: Hashable {
-        case subscribe
-        case tips1
-        case tips2
+        case subscribe(String)
+        case tips(String)
         case restore
         case close
     }
@@ -35,7 +40,7 @@ public struct DeveloperSupportStoreView: View {
 
     @State private var viewModel: StoreViewModel
 
-    @State private var hoveredProduct: String?
+    @State private var hoveredProductId: String?
 
     /// Creates a new developer support store view.
     ///
@@ -80,8 +85,18 @@ public struct DeveloperSupportStoreView: View {
             legalLinksFooter
         }
         .onAppear {
-            elementFocus = .subscribe
-            Task { await viewModel.syncStore() }
+            logger.notice("onAppear - initial products:")
+            logger.notice("  subscriptionProducts: \(self.viewModel.subscriptionProducts.count)")
+            logger.notice("  nonConsumableProducts: \(self.viewModel.nonConsumableProducts.count)")
+            if let firstSubscription = viewModel.subscriptionProducts.first {
+                elementFocus = .subscribe(firstSubscription.id)
+            }
+            Task {
+                await viewModel.syncStore()
+                logger.notice("After syncStore:")
+                logger.notice("  subscriptionProducts: \(self.viewModel.subscriptionProducts.count)")
+                logger.notice("  nonConsumableProducts: \(self.viewModel.nonConsumableProducts.count)")
+            }
         }
         .padding(layout.paddingBig)
         .overlay {
@@ -123,19 +138,19 @@ public struct DeveloperSupportStoreView: View {
                     .foregroundStyle(colors.primaryText)
             }
 
-            ForEach(config.subscriptionIds, id: \.self) { productId in
-                subscriptionCard(for: productId)
+            ForEach(viewModel.subscriptionProducts, id: \.id) { product in
+                subscriptionCard(for: product)
             }
         }
     }
 
     @ViewBuilder
-    private func subscriptionCard(for productId: String) -> some View {
-        let info = viewModel.productInfo(for: productId)
-        let isHovered = hoveredProduct == productId
+    private func subscriptionCard(for product: Product) -> some View {
+        let info = viewModel.productInfo(for: product)
+        let isHovered = hoveredProductId == product.id
 
         Button {
-            Task { await viewModel.purchase(productId) }
+            Task { await viewModel.purchase(product) }
         } label: {
             HStack(spacing: layout.spacingDefault) {
                 ZStack {
@@ -149,11 +164,11 @@ public struct DeveloperSupportStoreView: View {
                 }
 
                 VStack(alignment: .leading, spacing: layout.spacingSmall) {
-                    Text(info?.name ?? "Monthly Tips")
+                    Text(info.name)
                         .font(typography.headlineMedium)
                         .foregroundStyle(colors.primaryText)
 
-                    Text(info?.description ?? "Support development")
+                    Text(info.description)
                         .font(typography.bodyMedium)
                         .foregroundStyle(colors.secondaryText)
                         .lineLimit(2)
@@ -162,7 +177,7 @@ public struct DeveloperSupportStoreView: View {
                 Spacer()
 
                 VStack(spacing: layout.spacingSmall) {
-                    Text(info?.price ?? "")
+                    Text(info.price)
                         .font(typography.headlineSmall)
                         .foregroundStyle(colors.primaryText)
 
@@ -191,10 +206,10 @@ public struct DeveloperSupportStoreView: View {
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
         }
         .buttonStyle(.plain)
-        .focused($elementFocus, equals: .subscribe)
+        .focused($elementFocus, equals: .subscribe(product.id))
         .focusEffectDisabled()
         .onHover { hovering in
-            hoveredProduct = hovering ? productId : nil
+            hoveredProductId = hovering ? product.id : nil
         }
         .help(Text("store.button.purchase", bundle: .module))
     }
@@ -223,24 +238,21 @@ public struct DeveloperSupportStoreView: View {
 
     @ViewBuilder
     private var oneTimePurchaseSection: some View {
-        let focusIds: [ButtonsFocusable] = [.tips1, .tips2]
-
         HStack(spacing: layout.spacingDefault) {
-            ForEach(Array(zip(config.inAppPurchaseIds, focusIds)), id: \.0) { productId, focusId in
-                oneTimePurchaseCard(for: productId, focusId: focusId)
+            ForEach(Array(viewModel.nonConsumableProducts.enumerated()), id: \.element.id) { index, product in
+                oneTimePurchaseCard(for: product, isFirst: index == 0)
             }
         }
     }
 
     @ViewBuilder
-    private func oneTimePurchaseCard(for productId: String, focusId: ButtonsFocusable) -> some View {
-        let info = viewModel.productInfo(for: productId)
-        let isHovered = hoveredProduct == productId
-        let isFirst = config.inAppPurchaseIds.first == productId
+    private func oneTimePurchaseCard(for product: Product, isFirst: Bool) -> some View {
+        let info = viewModel.productInfo(for: product)
+        let isHovered = hoveredProductId == product.id
         let icon = isFirst ? "cup.and.saucer" : "takeoutbag.and.cup.and.straw"
 
         Button {
-            Task { await viewModel.purchase(productId) }
+            Task { await viewModel.purchase(product) }
         } label: {
             VStack(spacing: layout.spacingDefault) {
                 ZStack {
@@ -253,11 +265,11 @@ public struct DeveloperSupportStoreView: View {
                         .foregroundStyle(colors.primaryText)
                 }
 
-                Text(info?.name ?? "Tips")
+                Text(info.name)
                     .font(typography.headlineSmall)
                     .foregroundStyle(colors.primaryText)
 
-                Text(info?.description ?? "Support once")
+                Text(info.description)
                     .font(typography.bodySmall)
                     .foregroundStyle(colors.secondaryText)
                     .multilineTextAlignment(.center)
@@ -266,7 +278,7 @@ public struct DeveloperSupportStoreView: View {
 
                 Spacer(minLength: 0)
 
-                Text(info?.price ?? "")
+                Text(info.price)
                     .font(typography.headlineMedium)
                     .foregroundStyle(colors.primaryText)
             }
@@ -287,10 +299,10 @@ public struct DeveloperSupportStoreView: View {
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
         }
         .buttonStyle(.plain)
-        .focused($elementFocus, equals: focusId)
+        .focused($elementFocus, equals: .tips(product.id))
         .focusEffectDisabled()
         .onHover { hovering in
-            hoveredProduct = hovering ? productId : nil
+            hoveredProductId = hovering ? product.id : nil
         }
         .help(Text("store.button.purchase", bundle: .module))
     }
@@ -361,18 +373,13 @@ public struct DeveloperSupportStoreView: View {
 // MARK: - Preview Configuration
 
 private struct PreviewConfiguration: StoreConfigurationProtocol {
-    var subscriptionIds: [String] { ["com.example.subscription"] }
-    var inAppPurchaseIds: [String] { ["com.example.tip1", "com.example.tip2"] }
     var privacyPolicyURL: URL { URL(string: "https://example.com/privacy")! }
     var termsOfUseURL: URL { URL(string: "https://example.com/terms")! }
 }
 
 #Preview("DeveloperSupportStoreView") {
     let config = PreviewConfiguration()
-    let previewService = StoreServicePreview.withDefaultMockData(
-        subscriptionIds: config.subscriptionIds,
-        inAppPurchaseIds: config.inAppPurchaseIds
-    )
+    let previewService = StoreServicePreview.withDefaultMockData()
 
     DeveloperSupportStoreView(
         configuration: config,
@@ -385,11 +392,7 @@ private struct PreviewConfiguration: StoreConfigurationProtocol {
 
 #Preview("DeveloperSupportStoreView - With Subscription") {
     let config = PreviewConfiguration()
-    let previewService = StoreServicePreview.withDefaultMockData(
-        subscriptionIds: config.subscriptionIds,
-        inAppPurchaseIds: config.inAppPurchaseIds,
-        hasActiveSubscription: true
-    )
+    let previewService = StoreServicePreview.withDefaultMockData(hasActiveSubscription: true)
 
     DeveloperSupportStoreView(
         configuration: config,

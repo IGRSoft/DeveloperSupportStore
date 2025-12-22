@@ -10,28 +10,43 @@ import SwiftUI
 
 /// Main configuration protocol for the DeveloperSupportStore package.
 ///
-/// Implement this protocol to provide your app's product IDs, URLs, and optionally
+/// Implement this protocol to provide your app's URLs and optionally
 /// customize colors, typography, and layout constants.
+///
+/// Product IDs are managed automatically via `Products.plist` in your app bundle.
+/// StoreHelper reads this file and provides product collections.
 ///
 /// Example:
 /// ```swift
 /// struct MyStoreConfiguration: StoreConfigurationProtocol {
-///     var subscriptionIds: [String] { ["com.example.subscription"] }
-///     var inAppPurchaseIds: [String] { ["com.example.tip1", "com.example.tip2"] }
 ///     var privacyPolicyURL: URL { URL(string: "https://example.com/privacy")! }
 ///     var termsOfUseURL: URL { URL(string: "https://example.com/terms")! }
 ///     // colors, typography, layout use defaults
 /// }
 /// ```
+///
+/// Your app must include a `Products.plist` file with the following format:
+/// ```xml
+/// <dict>
+///     <key>Products</key>
+///     <array>
+///         <string>com.example.tip.small</string>
+///         <string>com.example.tip.large</string>
+///     </array>
+///     <key>Subscriptions</key>
+///     <array>
+///         <dict>
+///             <key>Group</key>
+///             <string>support</string>
+///             <key>Products</key>
+///             <array>
+///                 <string>com.example.subscription.monthly</string>
+///             </array>
+///         </dict>
+///     </array>
+/// </dict>
+/// ```
 public protocol StoreConfigurationProtocol: Sendable {
-    // MARK: - Products (Required)
-
-    /// Subscription product identifiers.
-    var subscriptionIds: [String] { get }
-
-    /// In-app purchase (one-time) product identifiers.
-    var inAppPurchaseIds: [String] { get }
-
     // MARK: - URLs (Required)
 
     /// Privacy policy URL displayed in the store footer.
@@ -54,18 +69,13 @@ public protocol StoreConfigurationProtocol: Sendable {
 
 // MARK: - Default Implementations
 
-extension StoreConfigurationProtocol {
-    /// All product identifiers (subscriptions + in-app purchases).
-    public var allProductIds: [String] {
-        subscriptionIds + inAppPurchaseIds
-    }
-
+public extension StoreConfigurationProtocol {
     /// Default colors based on the original Colir app design.
-    public var colors: StoreColors { .default }
+    var colors: StoreColors { .default }
 
     /// Default typography based on the original Colir app design.
-    public var typography: StoreTypography { .default }
+    var typography: StoreTypography { .default }
 
     /// Default layout constants based on the original Colir app design.
-    public var layout: StoreLayoutConstants { .default }
+    var layout: StoreLayoutConstants { .default }
 }

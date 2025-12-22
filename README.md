@@ -9,7 +9,7 @@ A configurable SwiftUI package for displaying in-app purchases and subscriptions
 - 🌙 Light/dark mode support with adaptive defaults
 - 🔒 Swift 6 strict concurrency compliance
 - 🧪 Unit tested configuration system
-- 📦 Uses StoreHelper for IAP handling
+- 📦 Uses StoreHelper for IAP handling with automatic `Products.plist` loading
 
 ## Requirements
 
@@ -36,34 +36,83 @@ dependencies: [
 ]
 ```
 
+## Setup
+
+### 1. Add Products.plist
+
+Create a `Products.plist` file in your app bundle with your product IDs:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Products</key>
+    <array>
+        <!-- Non-consumable (one-time) products -->
+        <string>com.yourapp.tip.small</string>
+        <string>com.yourapp.tip.large</string>
+    </array>
+    <key>Subscriptions</key>
+    <array>
+        <dict>
+            <key>Group</key>
+            <string>support</string>
+            <key>Products</key>
+            <array>
+                <string>com.yourapp.subscription.monthly</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>
+```
+
+**Structure:**
+- `Products` → Array of one-time purchase product IDs (tips/non-consumables)
+- `Subscriptions` → Array of subscription group dictionaries containing group name and product IDs
+
+### 2. Add StoreKit Configuration (for testing)
+
+Create a `.storekit` configuration file in Xcode to test purchases in the simulator.
+
 ## Usage
 
 ### Basic Usage
 
 ```swift
 import DeveloperSupportStore
+import SwiftUI
 
-// 1. Create a configuration
+// 1. Create a configuration (only URLs required - products come from Products.plist)
 struct MyStoreConfiguration: StoreConfigurationProtocol {
-    var subscriptionIds: [String] { ["com.app.subscription.monthly"] }
-    var inAppPurchaseIds: [String] { ["com.app.tip.small", "com.app.tip.large"] }
     var privacyPolicyURL: URL { URL(string: "https://example.com/privacy")! }
     var termsOfUseURL: URL { URL(string: "https://example.com/terms")! }
 }
 
-// 2. Create the view
-let config = MyStoreConfiguration()
-let storeService = StoreService(configuration: config)
-let viewModel = StoreViewModel(
-    configuration: config,
-    storeService: storeService,
-    onClose: { /* dismiss */ },
-    onPurchaseSuccess: { productId in /* handle success */ }
-)
+// 2. Display the store view
+struct ContentView: View {
+    @State private var isStorePresented = false
+    private let config = MyStoreConfiguration()
 
-// 3. Display
-DeveloperSupportStoreView(configuration: config)
-    .environment(viewModel)
+    var body: some View {
+        Button("Open Store") {
+            isStorePresented = true
+        }
+        .sheet(isPresented: $isStorePresented) {
+            DeveloperSupportStoreView(
+                configuration: config,
+                onPurchaseSuccess: { productId in
+                    print("Purchased: \(productId)")
+                },
+                onDismiss: {
+                    isStorePresented = false
+                }
+            )
+        }
+    }
+}
 ```
 
 ### Custom Styling
@@ -73,8 +122,6 @@ Override defaults by implementing the optional protocol properties:
 ```swift
 struct CustomStoreConfiguration: StoreConfigurationProtocol {
     // Required
-    var subscriptionIds: [String] { ["com.app.sub"] }
-    var inAppPurchaseIds: [String] { ["com.app.tip"] }
     var privacyPolicyURL: URL { URL(string: "https://example.com/privacy")! }
     var termsOfUseURL: URL { URL(string: "https://example.com/terms")! }
 
@@ -116,8 +163,6 @@ struct CustomStoreConfiguration: StoreConfigurationProtocol {
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `subscriptionIds` | `[String]` | Product IDs for subscriptions |
-| `inAppPurchaseIds` | `[String]` | Product IDs for one-time purchases |
 | `privacyPolicyURL` | `URL` | Privacy policy link |
 | `termsOfUseURL` | `URL` | Terms of use link |
 
@@ -128,6 +173,22 @@ struct CustomStoreConfiguration: StoreConfigurationProtocol {
 | `colors` | `StoreColors` | UI color configuration |
 | `typography` | `StoreTypography` | Font configuration |
 | `layout` | `StoreLayoutConstants` | Spacing and padding |
+
+> **Note:** Product IDs are loaded automatically from `Products.plist` by StoreHelper.
+
+## Example Project
+
+The `Example/` directory contains a complete iOS app demonstrating integration:
+
+```bash
+# Open the example project
+open Example/DeveloperSupportStoreExample.xcworkspace
+```
+
+The example includes:
+- `Products.plist` with sample product IDs
+- `DeveloperSupportStoreExample.storekit` configuration for testing
+- `ContentView.swift` showing store integration
 
 ## Architecture
 
