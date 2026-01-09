@@ -1,0 +1,16 @@
+//
+//  StoreRestoreResult.swift
+//
+//  Created on 09.01.2026.
+//  Copyright © 2026 IGR Soft. All rights reserved.
+//
+
+import Foundation
+
+/// Represents the result of a restore purchases action.
+public enum StoreRestoreResult: Sendable, Equatable {
+    /// The restore completed successfully.
+    case success
+    /// The restore failed with an error.
+    case failure
+}

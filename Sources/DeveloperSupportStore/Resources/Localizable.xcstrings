@@ -107,6 +107,40 @@
         }
       }
     },
+    "store.restore.failure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to restore purchases"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не вдалося відновити покупки"
+          }
+        }
+      }
+    },
+    "store.restore.success" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchases restored successfully"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Покупки успішно відновлено"
+          }
+        }
+      }
+    },
     "store.title.oneTime" : {
       "extractionState" : "manual",
       "localizations" : {
