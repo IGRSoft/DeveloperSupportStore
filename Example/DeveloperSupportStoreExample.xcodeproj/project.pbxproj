@@ -7,8 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8B41F6832DEDD23B001A66F9 /* DeveloperSupportStoreExampleFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 8B41F6822DEDD23B001A66F9 /* DeveloperSupportStoreExampleFeature */; };
-		8B41F6852DEDD25C001A66F9 /* DeveloperSupportStoreExampleFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 8B41F6842DEDD25C001A66F9 /* DeveloperSupportStoreExampleFeature */; };
+		A5AEF7AE2F164C9E00186E81 /* DeveloperSupportStore in Frameworks */ = {isa = PBXBuildFile; productRef = A5AEF7AD2F164C9E00186E81 /* DeveloperSupportStore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -65,7 +64,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8B41F6852DEDD25C001A66F9 /* DeveloperSupportStoreExampleFeature in Frameworks */,
+				A5AEF7AE2F164C9E00186E81 /* DeveloperSupportStore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -73,7 +72,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8B41F6832DEDD23B001A66F9 /* DeveloperSupportStoreExampleFeature in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -128,7 +126,7 @@
 			);
 			name = DeveloperSupportStoreExample;
 			packageProductDependencies = (
-				8B41F6842DEDD25C001A66F9 /* DeveloperSupportStoreExampleFeature */,
+				A5AEF7AD2F164C9E00186E81 /* DeveloperSupportStore */,
 			);
 			productName = DeveloperSupportStoreExample;
 			productReference = 8B41F6452DEDD0D5001A66F9 /* DeveloperSupportStoreExample.app */;
@@ -152,7 +150,6 @@
 			);
 			name = DeveloperSupportStoreExampleUITests;
 			packageProductDependencies = (
-				8B41F6822DEDD23B001A66F9 /* DeveloperSupportStoreExampleFeature */,
 			);
 			productName = DeveloperSupportStoreExampleUITests;
 			productReference = 8B41F65C2DEDD0D6001A66F9 /* DeveloperSupportStoreExample.xctest */;
@@ -187,7 +184,7 @@
 			mainGroup = 8B41F63C2DEDD0D5001A66F9;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				8B41F6862DEE0000001A66F9 /* XCLocalSwiftPackageReference "DeveloperSupportStoreExamplePackage" */,
+				A5AEF7AC2F164C9E00186E81 /* XCLocalSwiftPackageReference "../" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8B41F6462DEDD0D5001A66F9 /* Products */;
@@ -477,22 +474,16 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		8B41F6862DEE0000001A66F9 /* XCLocalSwiftPackageReference "DeveloperSupportStoreExamplePackage" */ = {
+		A5AEF7AC2F164C9E00186E81 /* XCLocalSwiftPackageReference "../" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = DeveloperSupportStoreExamplePackage;
+			relativePath = "../";
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8B41F6822DEDD23B001A66F9 /* DeveloperSupportStoreExampleFeature */ = {
+		A5AEF7AD2F164C9E00186E81 /* DeveloperSupportStore */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8B41F6862DEE0000001A66F9 /* XCLocalSwiftPackageReference "DeveloperSupportStoreExamplePackage" */;
-			productName = DeveloperSupportStoreExampleFeature;
-		};
-		8B41F6842DEDD25C001A66F9 /* DeveloperSupportStoreExampleFeature */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8B41F6862DEE0000001A66F9 /* XCLocalSwiftPackageReference "DeveloperSupportStoreExamplePackage" */;
-			productName = DeveloperSupportStoreExampleFeature;
+			productName = DeveloperSupportStore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -28,7 +28,7 @@ public struct ExampleStoreConfiguration: StoreConfigurationProtocol {
 
 public struct ContentView: View {
     @State private var isStorePresented = false
-
+    @State private var storeService: StoreServiceProtocol = StoreService(isLoggingEnabled: true)
     private let configuration = ExampleStoreConfiguration()
 
     public var body: some View {
@@ -36,6 +36,7 @@ public struct ContentView: View {
             .sheet(isPresented: $isStorePresented) {
                 DeveloperSupportStoreView(
                     configuration: configuration,
+                    storeService: storeService,
                     onPurchaseSuccess: { productId in
                         print("Purchase successful: \(productId)")
                     },
@@ -44,14 +45,23 @@ public struct ContentView: View {
                     }
                 )
             }
+            .task {
+                try? await storeService.syncStoreData()
+            }
     }
 
     @ViewBuilder
     private var launcherView: some View {
         VStack(spacing: 24) {
-            Image(systemName: "heart.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(.pink)
+            HStack {
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(storeService.hasPurchasedProducts ? .green : .pink)
+                
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle( storeService.hasActiveSubscription ? .green : .pink)
+            }
 
             Text("DeveloperSupportStore")
                 .font(.title)

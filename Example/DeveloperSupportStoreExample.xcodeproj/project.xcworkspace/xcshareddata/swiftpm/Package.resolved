@@ -1,0 +1,24 @@
+{
+  "originHash" : "42e877c52851bbfb8ee3ac1a7154cf27c1db65ce2ae93b13244d474c14f1dacf",
+  "pins" : [
+    {
+      "identity" : "storehelper",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/russell-archer/StoreHelper.git",
+      "state" : {
+        "revision" : "1c55f49473d847fd5a2f495aabe45f6e5ea3e2ef",
+        "version" : "2.7.1"
+      }
+    },
+    {
+      "identity" : "swift-collections",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-collections",
+      "state" : {
+        "revision" : "7b847a3b7008b2dc2f47ca3110d8c782fb2e5c7e",
+        "version" : "1.3.0"
+      }
+    }
+  ],
+  "version" : 3
+}

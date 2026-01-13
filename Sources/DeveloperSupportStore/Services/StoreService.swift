@@ -13,6 +13,7 @@ import StoreKit
 /// Service for handling App Store interactions using StoreHelper.
 ///
 /// Products are loaded automatically from `Products.plist` in your app bundle.
+@Observable
 @MainActor
 public final class StoreService: StoreServiceProtocol {
     private let storeHelper: StoreHelper
@@ -22,6 +23,15 @@ public final class StoreService: StoreServiceProtocol {
     private var _subscriptionProducts: [Product] = []
     private var _nonConsumableProducts: [Product] = []
 
+    /// Indicates whether the user has an active subscription.
+    public private(set) var hasActiveSubscription: Bool = false
+
+    /// Indicates whether the user has any purchased products.
+    public private(set) var hasPurchasedProducts: Bool = false
+
+    /// Task for listening to transaction updates.
+    private var transactionListenerTask: Task<Void, Never>?
+
     /// Creates a new store service.
     ///
     /// - Parameters:
@@ -30,6 +40,40 @@ public final class StoreService: StoreServiceProtocol {
     public init(storeHelper: StoreHelper = StoreHelper(), isLoggingEnabled: Bool = true) {
         self.storeHelper = storeHelper
         logger = StoreLogger(category: "StoreService", isEnabled: isLoggingEnabled)
+        startTransactionListener()
+    }
+
+    // MARK: - Purchase State
+
+    /// Updates purchase state properties from StoreHelper.
+    private func updatePurchaseState() {
+        hasPurchasedProducts = !storeHelper.purchasedProducts.isEmpty
+
+        if let subscriptionIds = storeHelper.subscriptionProductIds {
+            hasActiveSubscription = storeHelper.purchasedProducts.contains { productId in
+                subscriptionIds.contains(productId)
+            }
+        } else {
+            hasActiveSubscription = false
+        }
+
+        logger.notice("updatePurchaseState: hasPurchasedProducts=\(hasPurchasedProducts), hasActiveSubscription=\(hasActiveSubscription)")
+    }
+
+    /// Starts listening for StoreKit transaction updates.
+    private func startTransactionListener() {
+        transactionListenerTask = Task { [weak self] in
+            for await result in Transaction.updates {
+                guard let self else { return }
+
+                if case .verified = result {
+                    // Transaction verified, update purchase state
+                    await MainActor.run {
+                        self.updatePurchaseState()
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Product Collections
@@ -42,14 +86,6 @@ public final class StoreService: StoreServiceProtocol {
     /// Non-consumable products loaded from Products.plist (one-time purchases/tips).
     public var nonConsumableProducts: [Product] {
         _nonConsumableProducts
-    }
-
-    /// Indicates whether the user has an active subscription.
-    public var hasActiveSubscription: Bool {
-        guard let subscriptionIds = storeHelper.subscriptionProductIds else { return false }
-        return storeHelper.purchasedProducts.contains { productId in
-            subscriptionIds.contains(productId)
-        }
     }
 
     // MARK: - Actions
@@ -86,6 +122,9 @@ public final class StoreService: StoreServiceProtocol {
 
         logger.notice("_subscriptionProducts count: \(_subscriptionProducts.count)")
         logger.notice("_nonConsumableProducts count: \(_nonConsumableProducts.count)")
+
+        // Update observable purchase state
+        updatePurchaseState()
     }
 
     /// Initiates the purchase of a product.
@@ -151,9 +190,11 @@ public struct MockProductData: Sendable {
 ///
 /// This service provides mock data for previews. For full testing with actual StoreKit
 /// behavior, use a StoreKit Configuration file in your test target.
+@Observable
 @MainActor
 public final class StoreServicePreview: StoreServiceProtocol {
     public var hasActiveSubscription: Bool
+    public var hasPurchasedProducts: Bool
 
     // Internal storage for mock data
     private let mockSubscriptions: [MockProductData]
@@ -173,18 +214,21 @@ public final class StoreServicePreview: StoreServiceProtocol {
     ///
     /// - Parameters:
     ///   - hasActiveSubscription: Whether to simulate an active subscription.
+    ///   - hasPurchasedProducts: Whether to simulate having purchased products.
     ///   - mockSubscriptions: Mock subscription product data.
     ///   - mockPurchases: Mock one-time purchase product data.
     ///   - purchaseResult: The result to return from purchase attempts.
     ///   - syncDelay: Artificial delay for sync operations (simulates network).
     public init(
         hasActiveSubscription: Bool = false,
+        hasPurchasedProducts: Bool = false,
         mockSubscriptions: [MockProductData] = [],
         mockPurchases: [MockProductData] = [],
         purchaseResult: StorePurchaseResult = .success(productId: "mock.product"),
         syncDelay: Duration = .zero
     ) {
         self.hasActiveSubscription = hasActiveSubscription
+        self.hasPurchasedProducts = hasPurchasedProducts
         self.mockSubscriptions = mockSubscriptions
         self.mockPurchases = mockPurchases
         mockSubscriptionProducts = mockSubscriptions

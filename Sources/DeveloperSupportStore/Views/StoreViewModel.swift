@@ -40,6 +40,9 @@ public final class StoreViewModel {
     /// Whether an overlay (loading indicator) should be displayed.
     public var isLoading: Bool = false
 
+    /// The result of the last restore action, shown as an overlay.
+    public var restoreResult: StoreRestoreResult?
+
     // MARK: - Product Collections
 
     /// Subscription products from StoreHelper.
@@ -100,7 +103,9 @@ public final class StoreViewModel {
     ///
     /// After StoreHelper fetches products from the App Store,
     /// this updates the stored properties to trigger UI refresh.
-    public func syncStore() async {
+    ///
+    /// - Parameter showResult: Whether to show the restore result overlay. Defaults to `false`.
+    public func syncStore(showResult: Bool = false) async {
         logger.notice("syncStore() called")
         isLoading = true
         defer { isLoading = false }
@@ -119,9 +124,21 @@ public final class StoreViewModel {
             logger.notice("After assignment:")
             logger.notice("  subscriptionProducts: \(subscriptionProducts.count)")
             logger.notice("  nonConsumableProducts: \(nonConsumableProducts.count)")
+
+            if showResult {
+                restoreResult = storeService.hasPurchasedProducts ? .success : .nothingToRestore
+            }
         } catch {
             logger.error("Sync error: \(error.localizedDescription)")
+            if showResult {
+                restoreResult = .failure
+            }
         }
+    }
+
+    /// Dismisses the restore result overlay.
+    public func dismissRestoreResult() {
+        restoreResult = nil
     }
 
     /// Gets product info for a product.

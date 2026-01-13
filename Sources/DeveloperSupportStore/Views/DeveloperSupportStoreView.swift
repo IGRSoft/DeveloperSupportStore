@@ -110,6 +110,17 @@ public struct DeveloperSupportStoreView: View {
                 .ignoresSafeArea()
             }
         }
+        .overlay {
+            if let restoreResult = viewModel.restoreResult {
+                RestoreOverlayView(
+                    result: restoreResult,
+                    colors: colors,
+                    typography: typography,
+                    layout: layout,
+                    onDismiss: viewModel.dismissRestoreResult
+                )
+            }
+        }
     }
 
     // MARK: - Header
@@ -338,7 +349,7 @@ public struct DeveloperSupportStoreView: View {
     @ViewBuilder
     private var restoreButton: some View {
         Button {
-            Task { await viewModel.syncStore() }
+            Task { await viewModel.syncStore(showResult: true) }
         } label: {
             Image(systemName: "arrow.counterclockwise")
                 .font(.system(size: 20, weight: .medium))
