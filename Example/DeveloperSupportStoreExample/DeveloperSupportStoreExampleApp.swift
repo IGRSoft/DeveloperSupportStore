@@ -1,5 +1,4 @@
 import SwiftUI
-import DeveloperSupportStoreExampleFeature
 
 @main
 struct DeveloperSupportStoreExampleApp: App {
