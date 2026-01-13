@@ -126,7 +126,7 @@ public final class StoreViewModel {
             logger.notice("  nonConsumableProducts: \(nonConsumableProducts.count)")
 
             if showResult {
-                restoreResult = .success
+                restoreResult = storeService.hasPurchasedProducts ? .success : .nothingToRestore
             }
         } catch {
             logger.error("Sync error: \(error.localizedDescription)")
