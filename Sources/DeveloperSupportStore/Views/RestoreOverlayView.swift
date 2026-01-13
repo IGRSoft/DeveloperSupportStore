@@ -43,7 +43,7 @@ struct RestoreOverlayView: View {
                         .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
                 )
                 .padding(.horizontal, layout.paddingBig)
-                .padding(.top, layout.paddingDefault)
+                .padding(.top, layout.paddingBig)
                 .offset(y: isVisible ? 0 : -100)
                 .opacity(isVisible ? 1 : 0)
 
@@ -92,19 +92,17 @@ struct RestoreOverlayView: View {
 
     private var backgroundColor: Color {
         switch result {
-        case .success:
-            return colors.selectedView.opacity(0.9)
-        case .failure:
-            return Color.red.opacity(0.9)
+        case .success: colors.selectedView.opacity(0.9)
+        case .failure: Color.red.opacity(0.9)
+        case .nothingToRestore: Color.blue.opacity(0.9)
         }
     }
 
     private var iconName: String {
         switch result {
-        case .success:
-            return "checkmark.circle.fill"
-        case .failure:
-            return "exclamationmark.triangle.fill"
+        case .success: "checkmark.circle.fill"
+        case .failure: "exclamationmark.triangle.fill"
+        case .nothingToRestore: "info.circle.fill"
         }
     }
 
@@ -114,10 +112,9 @@ struct RestoreOverlayView: View {
 
     private var messageKey: LocalizedStringKey {
         switch result {
-        case .success:
-            return "store.restore.success"
-        case .failure:
-            return "store.restore.failure"
+        case .success: "store.restore.success"
+        case .failure: "store.restore.failure"
+        case .nothingToRestore: "store.restore.nothingToRestore"
         }
     }
 
@@ -163,6 +160,20 @@ struct RestoreOverlayView: View {
 
         RestoreOverlayView(
             result: .failure,
+            colors: .default,
+            typography: .default,
+            layout: .default,
+            onDismiss: {}
+        )
+    }
+}
+
+#Preview("Nothing to Restore") {
+    ZStack {
+        Color.black.ignoresSafeArea()
+
+        RestoreOverlayView(
+            result: .nothingToRestore,
             colors: .default,
             typography: .default,
             layout: .default,

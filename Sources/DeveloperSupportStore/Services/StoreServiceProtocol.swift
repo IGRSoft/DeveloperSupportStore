@@ -25,6 +25,9 @@ public protocol StoreServiceProtocol: Sendable {
     /// Indicates whether the user has an active subscription.
     var hasActiveSubscription: Bool { get }
 
+    /// Indicates whether the user has any purchased products.
+    var hasPurchasedProducts: Bool { get }
+
     // MARK: - Actions
 
     /// Synchronizes store data with the App Store.

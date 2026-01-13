@@ -124,6 +124,23 @@
         }
       }
     },
+    "store.restore.nothingToRestore" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No previous purchases found"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Попередні покупки не знайдено"
+          }
+        }
+      }
+    },
     "store.restore.success" : {
       "extractionState" : "manual",
       "localizations" : {
